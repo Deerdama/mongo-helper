@@ -1,0 +1,31 @@
+{
+  "name": "deerdama/laravel-mongo-helper",
+  "description": "Artisan command to handle mongo collections",
+  "require": {
+    "jenssegers/mongodb": "^3.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Deerdama\\MongoHelper\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Deerdama\\MongoHelper\\MongoHelperServiceProvider"
+      ]
+    }
+  },
+  "authors": [
+    {
+      "name": "Deerdama"
+    }
+  ],
+  "license": "MIT",
+  "keywords": [
+    "laravel",
+    "mongodb",
+    "artisan",
+    "jenssegers/mongodb"
+  ]
+}
