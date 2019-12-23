@@ -24,7 +24,7 @@ class MongoHelper extends Command
 
     protected $signature = 'db:mongo-helper
                             {collection? : collection name}
-                            {--list_collections : get a list of all existing collections in mongodb}
+                            {--list : get a list of all existing collections in mongodb}
                             {--connection= : use a specific connection name instead of the default}
                             {--count : count of records in the specified collection}
                             {--count_all : output every single collection with the records count}
@@ -35,8 +35,7 @@ class MongoHelper extends Command
                             {--delete : delete all records in the collection}
                             {--drop : completely drop the collection}
                             {--download_path= : download the collection into a specific path}
-                            {--import_data= : path to the file to upload into the specified collection}
-                            {--pluck=* : pluck only specific column with index}';
+                            {--import_data= : path to the file to upload into the specified collection}';
 
     protected $description = 'Methods to debug and handle mongo collections';
 
@@ -52,8 +51,12 @@ class MongoHelper extends Command
         $this->connection = $this->option('connection') ?? config('config.connection');
         DB::setDefaultConnection($this->connection);
 
-        if ($this->option('list_collections')) {
+        if ($this->option('list')) {
             return $this->listCollections();
+        }
+
+        if ($this->option('count_all')) {
+            return $this->getAllCounts();
         }
 
         if ($this->option('import_data')) {
@@ -93,6 +96,22 @@ class MongoHelper extends Command
         }
 
         return $collections;
+    }
+
+    /**
+     * output a table with all collections and their size
+     */
+    private function getAllCounts()
+    {
+        $collections = $this->getAllCollections();
+        $result = [];
+
+        foreach ($collections as $collection) {
+            $collection['total'] = DB::collection($collection['collection'])->count();
+            $result[] = $collection;
+        }
+
+        $this->table(['Collection', 'Total'], $result);
     }
 
     /**
