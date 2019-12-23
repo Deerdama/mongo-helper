@@ -16,7 +16,7 @@ class MongoHelperServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->singleton('command.db:mongo-helper', function () {
-            return new ShowOptions;
+            return new MongoHelper();
         });
 
         $this->mergeConfigFrom(
