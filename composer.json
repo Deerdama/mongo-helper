@@ -3,6 +3,9 @@
   "description": "Artisan command to handle mongo collections",
   "require": {
   },
+  "suggest": {
+    "league/csv": "Necessary if you want to do imports or exports with csv"
+  },
   "autoload": {
     "psr-4": {
       "Deerdama\\MongoHelper\\": "src/"

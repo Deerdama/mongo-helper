@@ -8,7 +8,7 @@ trait ImportExportTrait
 {
     /** @var string */
     protected $path;
-    
+
     /**
      * download the collection
      */
@@ -36,7 +36,14 @@ trait ImportExportTrait
      */
     private function downloadCsv()
     {
-        $writer = \League\Csv\Writer::createFromPath(config('config.storage')->path($this->path . '.csv'), 'a+');
+        try {
+            $writer = \League\Csv\Writer::createFromPath(config('config.storage')->path($this->path . '.csv'), 'a+');
+        } catch (\Throwable $e) {
+            $this->error(" To use csv format, make sure you have league/csv installed");
+            $this->warn(" * composer require league/csv * ");
+            exit;
+        }
+
         $data = $this->collection->get();
         $results = [];
         $headers = [];
@@ -170,7 +177,14 @@ trait ImportExportTrait
      */
     private function importFromCsv()
     {
-        $data = \League\Csv\Reader::createFromPath(config('config.storage')->path($this->path), 'r');
+        try {
+            $data = \League\Csv\Reader::createFromPath(config('config.storage')->path($this->path), 'r');
+        } catch (\Throwable $e) {
+            $this->error(" To use csv format, make sure you have league/csv installed");
+            $this->warn(" * composer require league/csv * ");
+            exit;
+        }
+
         $data->setHeaderOffset(0);
         $records = $data->getRecords();
         $bar = $this->output->createProgressBar(count($data));
