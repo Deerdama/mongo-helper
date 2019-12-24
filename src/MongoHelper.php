@@ -2,7 +2,6 @@
 
 namespace Deerdama\MongoHelper;
 
-use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -11,15 +10,16 @@ use Illuminate\Support\Facades\Storage;
 
 class MongoHelper extends Command
 {
+    use ImportExportTrait;
+
+    /** @var string */
     protected $collectionName;
 
+    /** @var  */
     protected $collection;
 
     /** @var string */
     protected $connection;
-
-    /** @var string */
-    protected $path;
 
 
     protected $signature = 'db:mongo-helper
@@ -31,9 +31,10 @@ class MongoHelper extends Command
                             {--limit= : limit the amount of records to get}
                             {--dump : dump the results}
                             {--select=* : get only specific fields}
-                            {--download : download the collection into the storage}
                             {--delete : delete all records in the collection}
                             {--drop : completely drop the collection}
+                            {--download : download the collection into the storage}
+                            {--csv : download as csv}
                             {--download_path= : download the collection into a specific path}
                             {--import_data= : path to the file to upload into the specified collection}';
 
@@ -141,12 +142,6 @@ class MongoHelper extends Command
             return $this->collection->get()->dump();
         }
 
-        if ($this->option('pluck')) {
-            return $this->collection->get()
-                ->pluck($this->option('pluck')[1], $this->option('pluck')[0])
-                ->dump();
-        }
-
         $this->warn(" * And what exactly am I supposed to do with the {$this->collectionName} collection? \nTry again with some option please");
     }
 
@@ -196,73 +191,6 @@ class MongoHelper extends Command
             $this->collection->delete();
             $this->info("{$count} records deleted from {$this->collectionName}");
         }
-    }
-
-    /**
-     * download the collection
-     */
-    private function downloadCollection()
-    {
-        if (!$this->collection->count()) {
-            return $this->warn(" * Collection {$this->collectionName} is empty *");
-        }
-
-        $timestamp = Carbon::now('PST')->toDateTimeString();
-        $path = $this->option('download_path') ?: config('config.directory');
-        $file = $path . $this->collectionName . '_' . str_replace([':', ' ', '-'], '_', $timestamp . '.json');
-        config('config.storage')->put($file, $this->collection->get());
-        $this->info(PHP_EOL . " * Collection downloaded to {$file} *");
-    }
-
-    /**
-     * confirm data import details
-     */
-    private function importRequest()
-    {
-        if (!$this->collectionName) {
-            $this->collectionName = $this->ask("*** Write the name of the target collection ***");
-            return $this->importRequest();
-        } else {
-            $confirm = $this->confirm(" * Do you really want to import everything from {$this->option('import_data')} into {$this->collectionName}? *");
-
-            if (!$confirm) {
-                return;
-            }
-        }
-
-        $this->path = $this->option('import_data');
-        $this->importData();
-    }
-
-    /**
-     * check the file and process import
-     *
-     * @param bool $retry
-     */
-    private function importData($retry = false)
-    {
-        $file = config('config.storage')->exists($this->path);
-
-        if (!$file && !$retry) {
-            $this->path = config('config.directory') . $this->path;
-            return $this->importData(true);
-        }
-
-        if (!$file) {
-            return $this->error("Couldn't find file {$this->path}");
-        }
-
-        $file = config('config.storage')->get($this->path);
-        $data = json_decode($file);
-        $counter = 0;
-
-        foreach ($data as $item) {
-            $counter++;
-            unset($item->_id);
-            DB::collection($this->collectionName)->insert((array)$item);
-        }
-
-        $this->info(" * {$counter} records imported into {$this->collectionName}");
     }
 
     /**

@@ -30,7 +30,7 @@ Artisan command to quickly check, delete, export mongo collections, and to impor
 | download [**](#Download-Collections) | | Export the results into a file |
 | csv [**](#Download-Collections) | | Adding the option will export the data as csv (default is json) |
 | download_path [**](#Download-Collections) | string | Download the file into a specific directory |
-| import_data [**](#Import-Data) | string | Import into a collection data exported as json |
+| import_data [**](#Import-Data) | string | Import into a collection data exported as json or csv|
 | dump | | Dump the results as they are |
 
 ----------------
