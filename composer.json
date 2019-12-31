@@ -2,9 +2,11 @@
   "name": "deerdama/laravel-mongo-helper",
   "description": "Artisan command to handle mongo collections",
   "require": {
+    "jenssegers/mongodb": "^3.4",
+    "deerdama/console-zoo-laravel": "^1.0"
   },
   "suggest": {
-    "league/csv": "Necessary if you want to do imports or exports with csv"
+    "league/csv": "Necessary if you want to do imports or exports in csv"
   },
   "autoload": {
     "psr-4": {
