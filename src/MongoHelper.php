@@ -11,15 +11,23 @@ use Illuminate\Support\Facades\Storage;
 class MongoHelper extends Command
 {
     use ImportExportTrait;
+    use \Deerdama\ConsoleZoo\ConsoleZoo;
 
     /** @var string */
     protected $collectionName;
 
-    /** @var  */
+    /** @var */
     protected $collection;
 
     /** @var string */
     protected $connection;
+
+    protected $errorParam = [
+        'color' => 'white',
+        'icons' => 'no_entry',
+        'background' => 'red',
+        'bold' => false
+    ];
 
 
     protected $signature = 'db:mongo-helper
@@ -28,15 +36,15 @@ class MongoHelper extends Command
                             {--connection= : use a specific connection name instead of the default}
                             {--count : count of records in the specified collection}
                             {--count_all : output every single collection with the records count}
-                            {--limit= : limit the amount of records to get}
+                            {--limit= : limit the amount of records to retrieve}
                             {--dump : dump the results}
                             {--select=* : get only specific fields}
                             {--delete : delete all records in the collection}
                             {--drop : completely drop the collection}
                             {--download : download the collection into the storage}
                             {--csv : download as csv}
-                            {--download_path= : download the collection into a specific path}
-                            {--import_data= : path to the file to upload into the specified collection}';
+                            {--download_path= : download the collection into a specific directory}
+                            {--import= : path to the file to upload into the specified collection}';
 
     protected $description = 'Methods to debug and handle mongo collections';
 
@@ -51,6 +59,8 @@ class MongoHelper extends Command
     {
         $this->connection = $this->option('connection') ?? config('config.connection');
         DB::setDefaultConnection($this->connection);
+        $this->zooSetDefaults(['bold', 'color' => 'green']);
+        $this->line("");
 
         if ($this->option('list')) {
             return $this->listCollections();
@@ -60,7 +70,7 @@ class MongoHelper extends Command
             return $this->getAllCounts();
         }
 
-        if ($this->option('import_data')) {
+        if ($this->option('import')) {
             $this->collectionName = $this->argument('collection');
 
             return $this->importRequest();
@@ -81,7 +91,10 @@ class MongoHelper extends Command
         $collections = $collections ?: $this->getAllCollections();
 
         foreach ($collections as $collection) {
-            $this->info(' * ' . $collection['collection']);
+            $this->zoo('<icon>eight_spoked_asterisk</icon> ' . $collection['collection'], [
+                'color' => 'light_blue_dark_1'
+            ]);
+            $this->line(" --------------------------------------");
         }
     }
 
@@ -135,14 +148,17 @@ class MongoHelper extends Command
         }
 
         if ($this->option('count')) {
-            return $this->info(PHP_EOL . " * Total records in {$this->collectionName}: {$this->collection->count()} *");
+            return $this->zoo("<icon>pushpin</icon> There are <zoo swap> {$this->collection->count()} </zoo> records in the <zoo underline>{$this->collectionName}</zoo> collection");
         }
 
         if ($this->option('dump')) {
             return $this->collection->get()->dump();
         }
 
-        $this->warn(" * And what exactly am I supposed to do with the {$this->collectionName} collection? \nTry again with some option please");
+        $this->zoo("And what exactly am I supposed to do with the <zoo swap>{$this->collectionName}</zoo> collection? Try again with some option please", [
+            'color' => 'orange',
+            'icons' => 'astonished_face'
+        ]);
     }
 
     /**
@@ -166,11 +182,16 @@ class MongoHelper extends Command
      */
     private function dropCollection()
     {
-        $this->warn("Drop {$this->collectionName} collection with {$this->collection->count()} records?");
+        $this->zooWarning("Do you really want to drop <zoo swap>{$this->collectionName}</zoo> collection with all the {$this->collection->count()} records?", [
+            'icons' => 'heavy_exclamation_mark_symbol'
+        ]);
 
         if ($this->confirm("") === true) {
             Schema::connection('mongodb')->drop($this->collectionName);
-            $this->info("collection {$this->collectionName} dropped");
+            $this->line("");
+            $this->zoo("Collection <zoo swap>{$this->collectionName}</zoo> dropped... hope that's what you wanted", [
+                'icons' => 'thumbs_up_sign'
+            ]);
         }
     }
 
@@ -182,14 +203,20 @@ class MongoHelper extends Command
         $count = $this->collection->count();
 
         if (!$count) {
-            return $this->info("Collection {$this->collectionName} already empty");
+            return $this->zooInfo("<icon>thumbs_up_sign</icon> Collection <zoo swap>{$this->collectionName}</zoo> is already empty", [
+                'icons' => false
+            ]);
         }
 
-        $this->warn(" * Delete all {$count} records from {$this->collectionName} collection? *");
+        $this->zooWarning("Do you really want to delete all <zoo swap> {$count} </zoo> records from <zoo underline>{$this->collectionName}</zoo>?", [
+            'icons' => 'black_question_mark_ornament'
+        ]);
 
         if ($this->confirm("") === true) {
             $this->collection->delete();
-            $this->info("{$count} records deleted from {$this->collectionName}");
+            $this->zoo("All set! {$count} records deleted from <zoo underline>{$this->collectionName}</zoo>", [
+                'icons' => 'thumbs_up_sign'
+            ]);
         }
     }
 
@@ -199,13 +226,28 @@ class MongoHelper extends Command
     private function noCollection()
     {
         $collections = $this->getAllCollections();
-        $this->warn(PHP_EOL . ' * My crystal ball just broke.. what collection are we talking about?');
+
+        $this->zooWarning('Sorry, my crystal ball just broke.. what collection are we talking about?', [
+            'icons' => 'crystal_ball'
+        ]);
+
         $name = $this->anticipate("Collection Name:", array_column($collections, 'collection'));
 
         if (!$name || !in_array($name, array_column($collections, 'collection'))) {
-            $this->error("Nope.. collection {$name} doesn't exist, try again..");
-            $this->warn(PHP_EOL . "Little help, here are all the collections I found:" . PHP_EOL);
-            return $this->listCollections();
+            $this->zooError(PHP_EOL . " <icon>no_entry</icon> Nope.. collection <zoo swap> {$name} </zoo> doesn't exist, try again.", [
+                'icons' => false
+            ]);
+
+            $this->zooWarning(PHP_EOL . " <icon>electric_light_bulb</icon> Do you want me to show you all the collections I found?", [
+                'icons' => false,
+                'bold' => false
+            ]);
+
+            if ($this->confirm("", true)) {
+                return $this->listCollections();
+            } else {
+                return null;
+            }
         }
 
         return $name;

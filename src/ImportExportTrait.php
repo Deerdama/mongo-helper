@@ -15,7 +15,12 @@ trait ImportExportTrait
     private function downloadCollection()
     {
         if (!$this->collection->count()) {
-            return $this->warn(" * Collection {$this->collectionName} is empty *");
+            $this->zoo("Collection <zoo swap>{$this->collectionName}</zoo> is empty..", [
+                'color' => 'orange',
+                'icons' => 'cross_mark'
+            ]);
+
+            return;
         }
 
         $timestamp = date('Y_m_d_H_i_s');
@@ -24,7 +29,7 @@ trait ImportExportTrait
 
         if (!$this->option('csv')) {
             config('config.storage')->put($this->path . '.json', $this->collection->get());
-            $this->info(PHP_EOL . " * Collection downloaded to {$this->path}.json *");
+            $this->zoo("<icon>floppy_disk</icon> Collection downloaded to <zoo underline>{$this->path}.json</zoo>");
         } else {
             config('config.storage')->put($this->path . '.csv', '');
             $this->downloadCsv();
@@ -39,8 +44,12 @@ trait ImportExportTrait
         try {
             $writer = \League\Csv\Writer::createFromPath(config('config.storage')->path($this->path . '.csv'), 'a+');
         } catch (\Throwable $e) {
-            $this->error(" To use csv format, make sure you have league/csv installed");
-            $this->warn(" * composer require league/csv * ");
+            $this->zoo("To use csv format, make sure you have league/csv installed ", $this->errorParam);
+            $this->line("");
+            $this->zooInfo("composer require league/csv", [
+                'icons' => 'inbox_tray',
+                'italic'
+            ]);
             exit;
         }
 
@@ -60,7 +69,7 @@ trait ImportExportTrait
 
         $writer->insertOne($headers);
         $writer->insertAll($results);
-        $this->info(PHP_EOL . " * Collection downloaded to {$this->path}.csv *");
+        $this->zoo("<icon>floppy_disk</icon> Collection downloaded to <zoo underline>{$this->path}.csv</zoo>");
     }
 
     /**
@@ -108,13 +117,16 @@ trait ImportExportTrait
             $this->collectionName = $this->ask("*** Write the name of the target collection ***");
             return $this->importRequest();
         } else {
-            $confirm = $this->confirm(" * Do you really want to import everything from {$this->option('import_data')} into {$this->collectionName}? *");
-            if (!$confirm) {
+            $this->zooWarning("Do you really want to import everything from <zoo underline>{$this->option('import')}</zoo> into <zoo underline>{$this->collectionName}</zoo>?", [
+                'icons' => 'black_question_mark_ornament'
+            ]);
+
+            if (!$this->confirm("")) {
                 return;
             }
         }
 
-        $this->path = $this->option('import_data');
+        $this->path = $this->option('import');
         $this->line("");
         $this->importData();
     }
@@ -134,7 +146,7 @@ trait ImportExportTrait
         }
 
         if (!$file) {
-            return $this->error("Couldn't find file {$this->path}");
+            return $this->zoo("Couldn't find file <zoo underline>{$this->path}</zoo> ", $this->errorParam);
         }
 
         if (preg_match('/\.json$/', $this->path)) {
@@ -142,10 +154,12 @@ trait ImportExportTrait
         } else if (preg_match('/\.csv$/', $this->path)) {
             $total = $this->importFromCsv();
         } else {
-            return $this->error("The data to import needs to be in a csv or json file");
+            return $this->zoo("The data to import needs to be in a csv or json file ", $this->errorParam);
+
         }
 
-        $this->info("\n\n * {$total} records imported into {$this->collectionName}");
+        $this->line(PHP_EOL . PHP_EOL);
+        $this->zoo("<icon>outbox_tray</icon> {$total} records imported into <zoo underline>{$this->collectionName}</zoo> collection");
     }
 
     /**
@@ -180,8 +194,12 @@ trait ImportExportTrait
         try {
             $data = \League\Csv\Reader::createFromPath(config('config.storage')->path($this->path), 'r');
         } catch (\Throwable $e) {
-            $this->error(" To use csv format, make sure you have league/csv installed");
-            $this->warn(" * composer require league/csv * ");
+            $this->zoo("To use csv format, make sure you have league/csv installed ", $this->errorParam);
+            $this->line("");
+            $this->zooInfo("composer require league/csv", [
+                'icons' => 'inbox_tray',
+                'italic'
+            ]);
             exit;
         }
 
