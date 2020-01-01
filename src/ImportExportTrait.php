@@ -3,11 +3,15 @@
 namespace Deerdama\MongoHelper;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 trait ImportExportTrait
 {
     /** @var string */
     protected $path;
+
+    /** @var \Illuminate\Contracts\Filesystem\Filesystem */
+    protected $storage;
 
     /**
      * download the collection
@@ -26,12 +30,13 @@ trait ImportExportTrait
         $dir = $this->option('download_path') ?: config('config.directory');
         $dir = preg_match('/\/$/', $dir) ? $dir : $dir . '/';
         $this->path = $dir . $this->collectionName . '_' . date('Y_m_d_H_i_s');
+        $this->storage = Storage::disk(config('config.storage'));
 
         if (!$this->option('csv')) {
-            config('config.storage')->put($this->path . '.json', $this->collection->get());
+            $this->storage->put($this->path . '.json', $this->collection->get());
             $this->zoo("<icon>floppy_disk</icon> Collection downloaded to <zoo underline>{$this->path}.json</zoo>");
         } else {
-            config('config.storage')->put($this->path . '.csv', '');
+            $this->storage->put($this->path . '.csv', '');
             $this->downloadCsv();
         }
     }
@@ -42,7 +47,7 @@ trait ImportExportTrait
     private function downloadCsv()
     {
         try {
-            $writer = \League\Csv\Writer::createFromPath(config('config.storage')->path($this->path . '.csv'), 'a+');
+            $writer = \League\Csv\Writer::createFromPath($this->storage->path($this->path . '.csv'), 'a+');
         } catch (\Throwable $e) {
             $this->zoo("To use csv format, make sure you have league/csv installed ", $this->errorParam);
             $this->line("");
@@ -123,6 +128,7 @@ trait ImportExportTrait
             return $this->importRequest();
         }
 
+        $this->storage = Storage::disk(config('config.storage'));
         $this->path = $this->option('import');
         $this->importData();
     }
@@ -134,7 +140,7 @@ trait ImportExportTrait
      */
     private function importData($retry = false)
     {
-        $file = config('config.storage')->exists($this->path);
+        $file = $this->storage->exists($this->path);
 
         if (!$file && !$retry) {
             $this->path = config('config.directory') . $this->path;
@@ -176,7 +182,7 @@ trait ImportExportTrait
      */
     private function importFromJson()
     {
-        $file = config('config.storage')->get($this->path);
+        $file = $this->storage->get($this->path);
         $data = json_decode($file);
         $bar = $this->output->createProgressBar(count($data));
         $bar->start();
@@ -199,7 +205,7 @@ trait ImportExportTrait
     private function importFromCsv()
     {
         try {
-            $data = \League\Csv\Reader::createFromPath(config('config.storage')->path($this->path), 'r');
+            $data = \League\Csv\Reader::createFromPath($this->storage->path($this->path), 'r');
         } catch (\Throwable $e) {
             $this->zoo("To use csv format, make sure you have league/csv installed ", $this->errorParam);
             $this->line("");
