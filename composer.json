@@ -1,10 +1,13 @@
 {
   "name": "deerdama/laravel-mongo-helper",
-  "description": "Artisan command to handle mongo collections",
+  "description": "Artisan command to handle mongo collections (list collections, delete, download, import data, etc..)",
   "require": {
+    "jenssegers/mongodb": "^3.4",
+    "deerdama/console-zoo-laravel": "^1.0"
   },
   "suggest": {
-    "league/csv": "Necessary if you want to do imports or exports with csv"
+    "league/csv": "Necessary if you want to do imports or exports in csv",
+    "symfony/var-dumper": "Necessary for the `dump` option"
   },
   "autoload": {
     "psr-4": {
@@ -28,7 +31,13 @@
   "keywords": [
     "laravel",
     "mongodb",
-    "artisan",
-    "jenssegers/mongodb"
+    "jenssegers/mongodb",
+    "export",
+    "download",
+    "import",
+    "collection",
+    "database",
+    "drop",
+    "delete"
   ]
 }

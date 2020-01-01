@@ -3,23 +3,30 @@
 namespace Deerdama\MongoHelper;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 
 class MongoHelper extends Command
 {
     use ImportExportTrait;
+    use CollectionTrait;
+    use \Deerdama\ConsoleZoo\ConsoleZoo;
 
     /** @var string */
     protected $collectionName;
 
-    /** @var  */
+    /** @var */
     protected $collection;
 
     /** @var string */
     protected $connection;
+
+    /** @var array */
+    protected $errorParam = [
+        'color' => 'white',
+        'icons' => 'no_entry',
+        'background' => 'red',
+        'bold' => false
+    ];
 
 
     protected $signature = 'db:mongo-helper
@@ -28,15 +35,15 @@ class MongoHelper extends Command
                             {--connection= : use a specific connection name instead of the default}
                             {--count : count of records in the specified collection}
                             {--count_all : output every single collection with the records count}
-                            {--limit= : limit the amount of records to get}
+                            {--limit= : limit the amount of records to retrieve}
                             {--dump : dump the results}
                             {--select=* : get only specific fields}
                             {--delete : delete all records in the collection}
                             {--drop : completely drop the collection}
                             {--download : download the collection into the storage}
                             {--csv : download as csv}
-                            {--download_path= : download the collection into a specific path}
-                            {--import_data= : path to the file to upload into the specified collection}';
+                            {--download_path= : download the collection into a specific directory}
+                            {--import= : path to the file to upload into the specified collection}';
 
     protected $description = 'Methods to debug and handle mongo collections';
 
@@ -46,11 +53,14 @@ class MongoHelper extends Command
         parent::__construct();
     }
 
-
     public function handle()
     {
-        $this->connection = $this->option('connection') ?? config('config.connection');
-        DB::setDefaultConnection($this->connection);
+        $this->zooSetDefaults(['bold', 'color' => 'green']);
+        $this->line("");
+
+        if ($this->setupConnection() === false) {
+            return;
+        }
 
         if ($this->option('list')) {
             return $this->listCollections();
@@ -60,7 +70,7 @@ class MongoHelper extends Command
             return $this->getAllCounts();
         }
 
-        if ($this->option('import_data')) {
+        if ($this->option('import')) {
             $this->collectionName = $this->argument('collection');
 
             return $this->importRequest();
@@ -74,45 +84,70 @@ class MongoHelper extends Command
     }
 
     /**
-     * dump the names of all existing collections
+     * try to connect to the DB and check if it's mongo
+     *
+     * @param bool $fail
+     * @return bool
      */
-    private function listCollections($collections = null)
+    private function setupConnection($fail = false)
     {
-        $collections = $collections ?: $this->getAllCollections();
+        if ($fail === true) {
+            $this->line("");
+            $this->zoo("Check <zoo underline>https://github.com/Deerdama/mongo-helper#Config</zoo> for extra info", [
+                'bold' => false,
+                'color' => 'blue'
+            ]);
 
-        foreach ($collections as $collection) {
-            $this->info(' * ' . $collection['collection']);
+            return false;
+        }
+
+        $this->connection = $this->option('connection') ?? config('config.connection');
+        DB::setDefaultConnection($this->connection);
+
+        try {
+            $driver = DB::connection()->getDriverName();
+
+            if ($driver !== 'mongodb') {
+                $this->zoo("The configured connection '<zoo underline>{$this->connection}</zoo>' is not a mongodb. Its driver is <zoo underline>{$driver}</zoo>", $this->errorParam);
+                return $this->setupConnection(true);
+            }
+        } catch (\Exception $e) {
+            $this->zoo("Can't connect to the database.. make sure that the connection <zoo underline>{$this->connection}</zoo> exists", $this->errorParam);
+            return $this->setupConnection(true);
         }
     }
 
     /**
-     * @return array
+     * anticipate collection name, list them if none is passed
      */
-    private function getAllCollections()
-    {
-        $collections = [];
-
-        foreach (DB::listCollections() as $collection) {
-            $collections[]['collection'] = $collection->getName();
-        }
-
-        return $collections;
-    }
-
-    /**
-     * output a table with all collections and their size
-     */
-    private function getAllCounts()
+    private function noCollection()
     {
         $collections = $this->getAllCollections();
-        $result = [];
 
-        foreach ($collections as $collection) {
-            $collection['total'] = DB::collection($collection['collection'])->count();
-            $result[] = $collection;
+        $this->zooWarning('Sorry, my crystal ball just broke.. what collection are we talking about?', [
+            'icons' => 'crystal_ball'
+        ]);
+
+        $name = $this->anticipate("Collection Name:", array_column($collections, 'collection'));
+
+        if (!$name || !in_array($name, array_column($collections, 'collection'))) {
+            $this->zooError(PHP_EOL . " <icon>no_entry</icon> Nope.. collection <zoo swap> {$name} </zoo> doesn't exist, try again.", [
+                'icons' => false
+            ]);
+
+            $this->zooWarning(PHP_EOL . " <icon>electric_light_bulb</icon> Do you want me to show you all the collections I found?", [
+                'icons' => false,
+                'bold' => false
+            ]);
+
+            if ($this->confirm("")) {
+                return $this->listCollections();
+            } else {
+                return null;
+            }
         }
 
-        $this->table(['Collection', 'Total'], $result);
+        return $name;
     }
 
     /**
@@ -135,79 +170,16 @@ class MongoHelper extends Command
         }
 
         if ($this->option('count')) {
-            return $this->info(PHP_EOL . " * Total records in {$this->collectionName}: {$this->collection->count()} *");
+            return $this->collectionCount();
         }
 
         if ($this->option('dump')) {
             return $this->collection->get()->dump();
         }
 
-        $this->warn(" * And what exactly am I supposed to do with the {$this->collectionName} collection? \nTry again with some option please");
-    }
-
-    /**
-     * build the query
-     */
-    private function getCollection()
-    {
-        $request = DB::collection($this->collectionName)
-            ->when($this->option('select'), function ($q) {
-                $q->select($this->option('select'));
-            })
-            ->when($this->option('limit'), function ($q) {
-                $q->limit((int)$this->option('limit'));
-            });
-
-        return $request;
-    }
-
-    /**
-     * completely drop a collection
-     */
-    private function dropCollection()
-    {
-        $this->warn("Drop {$this->collectionName} collection with {$this->collection->count()} records?");
-
-        if ($this->confirm("") === true) {
-            Schema::connection('mongodb')->drop($this->collectionName);
-            $this->info("collection {$this->collectionName} dropped");
-        }
-    }
-
-    /**
-     * delete all records from a collection
-     */
-    private function delete()
-    {
-        $count = $this->collection->count();
-
-        if (!$count) {
-            return $this->info("Collection {$this->collectionName} already empty");
-        }
-
-        $this->warn(" * Delete all {$count} records from {$this->collectionName} collection? *");
-
-        if ($this->confirm("") === true) {
-            $this->collection->delete();
-            $this->info("{$count} records deleted from {$this->collectionName}");
-        }
-    }
-
-    /**
-     * anticipate collection name, list them if none is passed
-     */
-    private function noCollection()
-    {
-        $collections = $this->getAllCollections();
-        $this->warn(PHP_EOL . ' * My crystal ball just broke.. what collection are we talking about?');
-        $name = $this->anticipate("Collection Name:", array_column($collections, 'collection'));
-
-        if (!$name || !in_array($name, array_column($collections, 'collection'))) {
-            $this->error("Nope.. collection {$name} doesn't exist, try again..");
-            $this->warn(PHP_EOL . "Little help, here are all the collections I found:" . PHP_EOL);
-            return $this->listCollections();
-        }
-
-        return $name;
+        $this->zoo("And what exactly am I supposed to do with the <zoo swap>{$this->collectionName}</zoo> collection? Try again with some option please", [
+            'color' => 'orange',
+            'icons' => 'astonished_face'
+        ]);
     }
 }
