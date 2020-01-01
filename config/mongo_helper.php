@@ -4,8 +4,8 @@ return [
     /** default connection name */
     'connection' => 'mongodb',
 
-    /** default filesystem disk for downloads */
-    'storage' => Storage::disk('local'),
+    /** default filesystem disk */
+    'storage' => 'local',
 
     /** default directory for downloads */
     'directory' => 'mongodb/',
