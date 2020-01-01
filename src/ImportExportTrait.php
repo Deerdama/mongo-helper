@@ -23,9 +23,9 @@ trait ImportExportTrait
             return;
         }
 
-        $timestamp = date('Y_m_d_H_i_s');
         $dir = $this->option('download_path') ?: config('config.directory');
-        $this->path = $dir . $this->collectionName . '_' . $timestamp;
+        $dir = preg_match('/\/$/', $dir) ? $dir : $dir . '/';
+        $this->path = $dir . $this->collectionName . '_' . date('Y_m_d_H_i_s');
 
         if (!$this->option('csv')) {
             config('config.storage')->put($this->path . '.json', $this->collection->get());
@@ -114,20 +114,16 @@ trait ImportExportTrait
     private function importRequest()
     {
         if (!$this->collectionName) {
-            $this->collectionName = $this->ask("*** Write the name of the target collection ***");
-            return $this->importRequest();
-        } else {
-            $this->zooWarning("Do you really want to import everything from <zoo underline>{$this->option('import')}</zoo> into <zoo underline>{$this->collectionName}</zoo>?", [
-                'icons' => 'black_question_mark_ornament'
+            $this->zoo("Write the name of the target collection", [
+                'color' => 'blue',
+                'icons' => 'pushpin'
             ]);
 
-            if (!$this->confirm("")) {
-                return;
-            }
+            $this->collectionName = $this->ask("");
+            return $this->importRequest();
         }
 
         $this->path = $this->option('import');
-        $this->line("");
         $this->importData();
     }
 
@@ -149,13 +145,24 @@ trait ImportExportTrait
             return $this->zoo("Couldn't find file <zoo underline>{$this->path}</zoo> ", $this->errorParam);
         }
 
+        if (!preg_match('/\.json$/', $this->path) && !preg_match('/\.csv/', $this->path)) {
+            return $this->zoo("The data to import needs to be in a csv or json file ", $this->errorParam);
+        }
+
+        $this->zooWarning("Do you really want to import everything from <zoo underline>{$this->option('import')}</zoo> into <zoo underline>{$this->collectionName}</zoo>?", [
+            'icons' => 'black_question_mark_ornament'
+        ]);
+
+        if (!$this->confirm("")) {
+            return;
+        }
+
+        $this->line("");
+
         if (preg_match('/\.json$/', $this->path)) {
             $total = $this->importFromJson();
         } else if (preg_match('/\.csv$/', $this->path)) {
             $total = $this->importFromCsv();
-        } else {
-            return $this->zoo("The data to import needs to be in a csv or json file ", $this->errorParam);
-
         }
 
         $this->line(PHP_EOL . PHP_EOL);

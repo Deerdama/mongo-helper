@@ -3,14 +3,12 @@
 namespace Deerdama\MongoHelper;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 
 class MongoHelper extends Command
 {
     use ImportExportTrait;
+    use CollectionTrait;
     use \Deerdama\ConsoleZoo\ConsoleZoo;
 
     /** @var string */
@@ -22,6 +20,7 @@ class MongoHelper extends Command
     /** @var string */
     protected $connection;
 
+    /** @var array */
     protected $errorParam = [
         'color' => 'white',
         'icons' => 'no_entry',
@@ -54,13 +53,14 @@ class MongoHelper extends Command
         parent::__construct();
     }
 
-
     public function handle()
     {
-        $this->connection = $this->option('connection') ?? config('config.connection');
-        DB::setDefaultConnection($this->connection);
         $this->zooSetDefaults(['bold', 'color' => 'green']);
         $this->line("");
+
+        if ($this->setupConnection() === false) {
+            return;
+        }
 
         if ($this->option('list')) {
             return $this->listCollections();
@@ -84,139 +84,36 @@ class MongoHelper extends Command
     }
 
     /**
-     * dump the names of all existing collections
+     * try to connect to the DB and check if it's mongo
+     *
+     * @param bool $fail
+     * @return bool
      */
-    private function listCollections($collections = null)
+    private function setupConnection($fail = false)
     {
-        $collections = $collections ?: $this->getAllCollections();
-
-        foreach ($collections as $collection) {
-            $this->zoo('<icon>eight_spoked_asterisk</icon> ' . $collection['collection'], [
-                'color' => 'light_blue_dark_1'
-            ]);
-            $this->line(" --------------------------------------");
-        }
-    }
-
-    /**
-     * @return array
-     */
-    private function getAllCollections()
-    {
-        $collections = [];
-
-        foreach (DB::listCollections() as $collection) {
-            $collections[]['collection'] = $collection->getName();
-        }
-
-        return $collections;
-    }
-
-    /**
-     * output a table with all collections and their size
-     */
-    private function getAllCounts()
-    {
-        $collections = $this->getAllCollections();
-        $result = [];
-
-        foreach ($collections as $collection) {
-            $collection['total'] = DB::collection($collection['collection'])->count();
-            $result[] = $collection;
-        }
-
-        $this->table(['Collection', 'Total'], $result);
-    }
-
-    /**
-     * handle all the options for a specific collection
-     */
-    private function specificCollection()
-    {
-        $this->collection = $this->getCollection();
-
-        if ($this->option('download') || $this->option('download_path')) {
-            return $this->downloadCollection();
-        }
-
-        if ($this->option('drop')) {
-            return $this->dropCollection();
-        }
-
-        if ($this->option('delete')) {
-            return $this->delete();
-        }
-
-        if ($this->option('count')) {
-            return $this->zoo("<icon>pushpin</icon> There are <zoo swap> {$this->collection->count()} </zoo> records in the <zoo underline>{$this->collectionName}</zoo> collection");
-        }
-
-        if ($this->option('dump')) {
-            return $this->collection->get()->dump();
-        }
-
-        $this->zoo("And what exactly am I supposed to do with the <zoo swap>{$this->collectionName}</zoo> collection? Try again with some option please", [
-            'color' => 'orange',
-            'icons' => 'astonished_face'
-        ]);
-    }
-
-    /**
-     * build the query
-     */
-    private function getCollection()
-    {
-        $request = DB::collection($this->collectionName)
-            ->when($this->option('select'), function ($q) {
-                $q->select($this->option('select'));
-            })
-            ->when($this->option('limit'), function ($q) {
-                $q->limit((int)$this->option('limit'));
-            });
-
-        return $request;
-    }
-
-    /**
-     * completely drop a collection
-     */
-    private function dropCollection()
-    {
-        $this->zooWarning("Do you really want to drop <zoo swap>{$this->collectionName}</zoo> collection with all the {$this->collection->count()} records?", [
-            'icons' => 'heavy_exclamation_mark_symbol'
-        ]);
-
-        if ($this->confirm("") === true) {
-            Schema::connection('mongodb')->drop($this->collectionName);
+        if ($fail === true) {
             $this->line("");
-            $this->zoo("Collection <zoo swap>{$this->collectionName}</zoo> dropped... hope that's what you wanted", [
-                'icons' => 'thumbs_up_sign'
+            $this->zoo("Check <zoo underline>https://github.com/Deerdama/mongo-helper#Config</zoo> for extra info", [
+                'bold' => false,
+                'color' => 'blue'
             ]);
-        }
-    }
 
-    /**
-     * delete all records from a collection
-     */
-    private function delete()
-    {
-        $count = $this->collection->count();
-
-        if (!$count) {
-            return $this->zooInfo("<icon>thumbs_up_sign</icon> Collection <zoo swap>{$this->collectionName}</zoo> is already empty", [
-                'icons' => false
-            ]);
+            return false;
         }
 
-        $this->zooWarning("Do you really want to delete all <zoo swap> {$count} </zoo> records from <zoo underline>{$this->collectionName}</zoo>?", [
-            'icons' => 'black_question_mark_ornament'
-        ]);
+        $this->connection = $this->option('connection') ?? config('config.connection');
+        DB::setDefaultConnection($this->connection);
 
-        if ($this->confirm("") === true) {
-            $this->collection->delete();
-            $this->zoo("All set! {$count} records deleted from <zoo underline>{$this->collectionName}</zoo>", [
-                'icons' => 'thumbs_up_sign'
-            ]);
+        try {
+            $driver = DB::connection()->getDriverName();
+
+            if ($driver !== 'mongodb') {
+                $this->zoo("The configured connection '<zoo underline>{$this->connection}</zoo>' is not a mongodb. Its driver is <zoo underline>{$driver}</zoo>", $this->errorParam);
+                return $this->setupConnection(true);
+            }
+        } catch (\Exception $e) {
+            $this->zoo("Can't connect to the database.. make sure that the connection <zoo underline>{$this->connection}</zoo> exists", $this->errorParam);
+            return $this->setupConnection(true);
         }
     }
 
@@ -243,7 +140,7 @@ class MongoHelper extends Command
                 'bold' => false
             ]);
 
-            if ($this->confirm("", true)) {
+            if ($this->confirm("")) {
                 return $this->listCollections();
             } else {
                 return null;
@@ -251,5 +148,38 @@ class MongoHelper extends Command
         }
 
         return $name;
+    }
+
+    /**
+     * handle all the options for a specific collection
+     */
+    private function specificCollection()
+    {
+        $this->collection = $this->getCollection();
+
+        if ($this->option('download') || $this->option('download_path')) {
+            return $this->downloadCollection();
+        }
+
+        if ($this->option('drop')) {
+            return $this->dropCollection();
+        }
+
+        if ($this->option('delete')) {
+            return $this->delete();
+        }
+
+        if ($this->option('count')) {
+            return $this->collectionCount();
+        }
+
+        if ($this->option('dump')) {
+            return $this->collection->get()->dump();
+        }
+
+        $this->zoo("And what exactly am I supposed to do with the <zoo swap>{$this->collectionName}</zoo> collection? Try again with some option please", [
+            'color' => 'orange',
+            'icons' => 'astonished_face'
+        ]);
     }
 }

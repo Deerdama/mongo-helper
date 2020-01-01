@@ -6,7 +6,8 @@
     "deerdama/console-zoo-laravel": "^1.0"
   },
   "suggest": {
-    "league/csv": "Necessary if you want to do imports or exports in csv"
+    "league/csv": "Necessary if you want to do imports or exports in csv",
+    "symfony/var-dumper": "Necessary for the `dump` option"
   },
   "autoload": {
     "psr-4": {
