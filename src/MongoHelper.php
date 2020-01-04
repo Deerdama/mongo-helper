@@ -33,6 +33,7 @@ class MongoHelper extends Command
                             {collection? : collection name}
                             {--list : get a list of all existing collections in mongodb}
                             {--connection= : use a specific connection name instead of the default}
+                            {--where=* : query builder where parameters}
                             {--count : count of records in the specified collection}
                             {--count_all : output every single collection with the records count}
                             {--limit= : limit the amount of records to retrieve}
