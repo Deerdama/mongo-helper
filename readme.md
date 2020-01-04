@@ -50,9 +50,12 @@ After publishing the package you can edit the config in `config/mongo_helper.php
 * **`connection`**: default name of the connection is `mongodb`. You can change that in the config. 
 Plus any specific connection name can be passed every time you are using the command, by adding the `connection` option (eg: `--connection=mongo_2`)
 
-    _The database connection driver has to be mongodb... Duh!!_
+    <sup>_Connection = the name of your connection as it is in `database.php` The database connection driver has to be mongodb... Duh!!_</sup>
 
 * **`storage`**: The default filesystem disk for both imports and exports is the `local`. Uses the storage facade => `Storage::disk('local')`
+
+    <sup>_`Local` disk = laravel's default path for local storage is `storage/app/` depending on what you have in `filesystems.php`_</sup>
+    
 
 * **`directory`**: By default the downloads will go be in their own directory `mongodb/`
 
