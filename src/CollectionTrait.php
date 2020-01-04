@@ -20,7 +20,54 @@ trait CollectionTrait
                 $q->limit((int)$this->option('limit'));
             });
 
+        if (count($this->option('where'))) {
+            $this->whereParam($request);
+        }
+
         return $request;
+    }
+
+    /**
+     * form query parameters
+     *
+     * @param $q
+     */
+    private function whereParam($q)
+    {
+        foreach ($this->option('where') as $where) {
+            preg_match('/^.*(?=,)/U', $where, $field);
+            preg_match('/(?<=,).*(?=,|$)/U', $where, $operator);
+            preg_match('/^.*\,.*\,(.*)$/U', $where, $value);
+
+            if (!$field || !$operator) {
+                continue;
+            }
+
+            $field = trim($field[0], ' ');
+            $operator = strtoupper(trim($operator[0], ' '));
+            $value = trim($value[1] ?? '', ' ');
+
+            if (strpos($value, '[') === 0) {
+                $value = str_replace([', ', ' ,'], ',', $value);
+                $value = explode(',', trim($value, '[]'));
+            }
+
+            if ($operator == 'NULL') {
+                $q->whereNull($field);
+            } else if ($operator == 'NOT NULL') {
+                $q->whereNotNull($field);
+            } else if (!$value) {
+                continue;
+            } else if ($operator == 'IN') {
+                $q->whereIn($field, (array)$value);
+            } else if ($operator == 'NOT IN') {
+                $q->whereNotIn($field, (array)$value);
+            } else if ($operator == 'BETWEEN') {
+                $q->whereBetween($field, (array)$value);
+            } else {
+                $q->where($field, $operator, $value);
+            }
+        }
     }
 
     /**

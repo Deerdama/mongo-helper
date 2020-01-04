@@ -31,6 +31,7 @@ Should work on any laravel above `5.0`, however I can personally confirm only `5
 | delete | | Delete the entire content of the collection |
 | drop | | Completely drop the collection |
 | select | array | Retrieve only specific columns |
+| where [**](#Using-WHERE-conditions) | string | Where parameters |
 | download [**](#Download-Collections) | | Export the results into a file |
 | csv [**](#Download-Collections) | | Adding the option will export the data as csv (default is json) |
 | download_path [**](#Download-Collections) | string | Download the file into a specific directory (will ignore the default config `directory`)  |
@@ -80,6 +81,24 @@ Couple of simple examples
     <p>
       <img src="https://images2.imgbox.com/0e/44/e1mVJKx2_o.png" width="400px">
     </p>
+
+<br>
+    
+    
+#### Using `WHERE` conditions
+
+**`php artisan db:mongo-helper test_collection --where="name, IN, [xyz,abc]" --where="id, BETWEEN, [5,99]" --where="deleted_at, NULL"`**
+
+
+* Multiple `WHERE`s can be passed to the command, however each condition needs to be passed as a separate option
+
+* Each `WHERE` needs to be passed as a string (inside quotes) containing the **column**, **operator** and **value** (separated by a comma), eg. **`--where="some_column, <>, some_value"`**. (Value not necessary for `NULL` and `NOT NULL`)
+
+* All normal operators are accepted: `=`, `<>`, `>`, `<`, `IN`, `NOT IN`, `NULL`, `NOT NULL`, `BETWEEN`...
+
+* **Arrays** to pass a value as array for operators like `IN` or `BETWEEN`, just wrap the value inside square brackets, eg: **`--where="some_column, NOT IN, [aaa,bbb,ccc]"`**
+
+
     
 --------------
 <br>
