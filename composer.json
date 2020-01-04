@@ -14,7 +14,6 @@
       "Deerdama\\MongoHelper\\": "src/"
     }
   },
-  "version": "dev",
   "extra": {
     "laravel": {
       "providers": [
@@ -33,6 +32,7 @@
     "mongodb",
     "jenssegers/mongodb",
     "export",
+    "csv",
     "download",
     "import",
     "collection",
