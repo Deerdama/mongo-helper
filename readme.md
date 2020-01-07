@@ -26,10 +26,10 @@ Should work on any laravel above `5.0`, however I can personally confirm only `5
 | --- | --- | --- |
 | connection | string | Use a specific connection name instead of the default |
 | list |  | Output all existing collections |
-| count | | Output the total of records in the specified collection |
+| count | | Output the total of records found in the specified collection |
 | count_all | | Shows a table with all existing collections and their totals |
-| limit | int | When using some data retrieval method, limit the results returned |
-| delete | | Delete the entire content of the collection |
+| limit | int | When using some data retrieval method, limit the amount of results returned |
+| delete | | Delete the entire content or the matching results from the collection |
 | drop | | Completely drop the collection |
 | select | array | Retrieve only specific columns |
 | where [**](#Using-WHERE-conditions) | string | Where parameters |

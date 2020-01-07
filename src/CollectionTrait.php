@@ -167,7 +167,9 @@ trait CollectionTrait
      */
     private function dropCollection()
     {
-        $this->zooWarning("Do you really want to drop <zoo swap>{$this->collectionName}</zoo> collection? (contains {$this->collection->count()} records)", [
+        $count = DB::collection($this->collectionName)->count();
+
+        $this->zooWarning("Do you really want to drop <zoo swap>{$this->collectionName}</zoo> collection? (contains {$count} records)", [
             'icons' => 'heavy_exclamation_mark_symbol'
         ]);
 
@@ -188,7 +190,7 @@ trait CollectionTrait
         $count = $this->collection->count();
 
         if (!$count) {
-            return $this->zooInfo("<icon>thumbs_up_sign</icon> Collection <zoo swap>{$this->collectionName}</zoo> is already empty", [
+            return $this->zooInfo("<icon>thumbs_up_sign</icon> Collection <zoo swap>{$this->collectionName}</zoo> is already empty or there aren't any matching results", [
                 'icons' => false
             ]);
         }
