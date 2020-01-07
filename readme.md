@@ -102,7 +102,7 @@ Couple of simple examples
 
 * **Casting** :since mongo is sensitive to the content type, and by default the value parsed from the passed condition will be a `string`, you can cast the `value` to some specific type by adding **`cast=??`** as last parameter of the `--where` condition. 
 For example if the collection had a column named `age` and the values were stored as `integer` then passing just `--where="age, >=, 18"` wouldn't return any result since the `18` would be considered a string. 
-But passing **`--where="age, >=, 33, cast=int"`** will make sure that the value is considered as string.
+But passing **`--where="age, >=, 33, cast=int"`** will make sure that the value is considered as integer.
 
     Passing the value as array (inside `[]`) and also adding a specific `cast=??`, will apply the specified type to each item separately, eg: `--where="age, NOT IN, [15,20,100], cast=int"` (each *age* inside the array will be an integer)
 
