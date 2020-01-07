@@ -19,7 +19,7 @@ trait ImportExportTrait
     private function downloadCollection()
     {
         if (!$this->collection->count()) {
-            $this->zoo("Collection <zoo swap>{$this->collectionName}</zoo> is empty..", [
+            $this->zoo("Collection <zoo swap>{$this->collectionName}</zoo> is empty, or there aren't any matching results..", [
                 'color' => 'orange',
                 'icons' => 'cross_mark'
             ]);

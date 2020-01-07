@@ -37,6 +37,14 @@ trait CollectionTrait
         foreach ($this->option('where') as $where) {
             preg_match('/^.*(?=,)/U', $where, $field);
             preg_match('/(?<=,).*(?=,|$)/U', $where, $operator);
+            preg_match('/\,cast=.*$|\, cast=.*$/U', $where, $cast);
+
+            if ($cast) {
+                $where = str_replace($cast[0], '', $where);
+                preg_match('/(?<=cast=).*(?=\s|$)/U', $cast[0], $type);
+                $cast = $type[0];
+            }
+
             preg_match('/^.*\,.*\,(.*)$/U', $where, $value);
 
             if (!$field || !$operator) {
@@ -50,6 +58,10 @@ trait CollectionTrait
             if (strpos($value, '[') === 0) {
                 $value = str_replace([', ', ' ,'], ',', $value);
                 $value = explode(',', trim($value, '[]'));
+            }
+
+            if ($cast) {
+                $value = $this->castValue($value, $cast);
             }
 
             if ($operator == 'NULL') {
@@ -68,6 +80,33 @@ trait CollectionTrait
                 $q->where($field, $operator, $value);
             }
         }
+    }
+
+    /**
+     * cast the value for the where condition as a specific type
+     *
+     * @param string|array $value
+     * @param string $type
+     * @param bool $arr
+     * @return array|bool|int|object|string
+     */
+    private function castValue($value, $type, $arr = false)
+    {
+        if (is_array($value) && $arr === false) {
+            foreach ($value as $item) {
+                $new[] = $this->castValue($item, $type, true);
+            }
+        } else if ($type === 'int' || $type === 'integer') {
+            $new = (int)$value;
+        } else if ($type === 'bool' || $type === 'boolean') {
+            $new = $value === 'false' ? false : (bool)$value;
+        } else if ($type === 'object' || $type === 'obj') {
+            $new = (object)$value;
+        } else if ($type === 'array' || $type === 'arr') {
+            $new = (array)$value;
+        }
+
+        return $new ?? $value;
     }
 
     /**
@@ -128,7 +167,9 @@ trait CollectionTrait
      */
     private function dropCollection()
     {
-        $this->zooWarning("Do you really want to drop <zoo swap>{$this->collectionName}</zoo> collection? (contains {$this->collection->count()} records)", [
+        $count = DB::collection($this->collectionName)->count();
+
+        $this->zooWarning("Do you really want to drop <zoo swap>{$this->collectionName}</zoo> collection? (contains {$count} records)", [
             'icons' => 'heavy_exclamation_mark_symbol'
         ]);
 
@@ -149,7 +190,7 @@ trait CollectionTrait
         $count = $this->collection->count();
 
         if (!$count) {
-            return $this->zooInfo("<icon>thumbs_up_sign</icon> Collection <zoo swap>{$this->collectionName}</zoo> is already empty", [
+            return $this->zooInfo("<icon>thumbs_up_sign</icon> Collection <zoo swap>{$this->collectionName}</zoo> is already empty or there aren't any matching results", [
                 'icons' => false
             ]);
         }
