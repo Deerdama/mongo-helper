@@ -27,10 +27,10 @@ trait ImportExportTrait
             return;
         }
 
-        $dir = $this->option('download_path') ?: config('config.directory');
+        $dir = $this->option('download_path') ?: config('mongo_helper.directory');
         $dir = preg_match('/\/$/', $dir) ? $dir : $dir . '/';
         $this->path = $dir . $this->collectionName . '_' . date('Y_m_d_H_i_s');
-        $this->storage = Storage::disk(config('config.storage'));
+        $this->storage = Storage::disk(config('mongo_helper.storage'));
 
         if (!$this->option('csv')) {
             $this->storage->put($this->path . '.json', $this->collection->get());
@@ -128,7 +128,7 @@ trait ImportExportTrait
             return $this->importRequest();
         }
 
-        $this->storage = Storage::disk(config('config.storage'));
+        $this->storage = Storage::disk(config('mongo_helper.storage'));
         $this->path = $this->option('import');
         $this->importData();
     }
@@ -143,7 +143,7 @@ trait ImportExportTrait
         $file = $this->storage->exists($this->path);
 
         if (!$file && !$retry) {
-            $this->path = config('config.directory') . $this->path;
+            $this->path = config('mongo_helper.directory') . $this->path;
             return $this->importData(true);
         }
 
