@@ -102,7 +102,7 @@ class MongoHelper extends Command
             return false;
         }
 
-        $this->connection = $this->option('connection') ?? config('config.connection');
+        $this->connection = $this->option('connection') ?? config('mongo_helper.connection');
         DB::setDefaultConnection($this->connection);
 
         try {

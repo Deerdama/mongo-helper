@@ -20,7 +20,7 @@ class MongoHelperServiceProvider extends ServiceProvider
         });
 
         $this->mergeConfigFrom(
-            __DIR__ . '/../config/mongo_helper.php', 'config'
+            __DIR__ . '/../config/mongo_helper.php', 'mongo_helper'
         );
 
         $this->commands(['command.db:mongo-helper']);
