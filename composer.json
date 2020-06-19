@@ -2,7 +2,7 @@
   "name": "deerdama/laravel-mongo-helper",
   "description": "Artisan command to handle mongo collections (list collections, delete, download, import data, etc..)",
   "require": {
-    "jenssegers/mongodb": "^3.1",
+    "jenssegers/mongodb": "^3.1 || ^4.0",
     "deerdama/console-zoo-laravel": "^1.0"
   },
   "suggest": {
