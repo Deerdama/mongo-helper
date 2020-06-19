@@ -5,7 +5,7 @@ Artisan command to quickly check, delete, export mongo collections, and to impor
 
 Install package: **`composer require deerdama/laravel-mongo-helper`**.
 
-Should work on any laravel above `5.0`, however I can personally confirm only `5.8` and `6.x`. Feel free to let me know if you find out issues on other versions and I'll update the info..
+Should work on any laravel above `5.0`, I can personally confirm `5.8`, `6.x` and `7.x`. Feel free to let me know if you find out issues on other versions, and I'll update the info..
 
 <br>
 
