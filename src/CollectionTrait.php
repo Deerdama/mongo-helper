@@ -24,6 +24,14 @@ trait CollectionTrait
             $this->whereParam($request);
         }
 
+        if (!$this->option('count') && ($this->option('sort') || $this->option('order'))) {
+            if ($this->option('desc')) {
+                $request->orderByDesc($this->option('sort') ?: $this->option('order'));
+            } else {
+                $request->orderBy($this->option('sort') ?: $this->option('order'));
+            }
+        }
+
         return $request;
     }
 
@@ -110,28 +118,32 @@ trait CollectionTrait
     }
 
     /**
+     * @param bool $retry
+     *
      * @return array
      */
-    private function getAllCollections()
+    private function getAllCollections($retry = false)
     {
-        $collections = [];
-
-        foreach (DB::listCollections() as $collection) {
-            $collections[]['collection'] = $collection->getName();
+        if ($this->allCollections || $retry) {
+            return $this->allCollections;
         }
 
-        return $collections;
+        foreach (DB::listCollections() as $collection) {
+            $this->allCollections[]['collection'] = $collection->getName();
+        }
+
+        return $this->getAllCollections(true);
     }
 
     /**
      * dump the names of all existing collections
      */
-    private function listCollections($collections = null)
+    private function listCollections()
     {
-        $collections = $collections ?: $this->getAllCollections();
+        $collections = $this->getAllCollections();
 
         foreach ($collections as $collection) {
-            $this->zoo('<icon>eight_spoked_asterisk</icon> ' . $collection['collection'], [
+            $this->zoo(' <icon>eight_spoked_asterisk</icon>  ' . $collection['collection'], [
                 'color' => 'light_blue_dark_1'
             ]);
             $this->line(" --------------------------------------");
@@ -159,7 +171,7 @@ trait CollectionTrait
      */
     private function collectionCount()
     {
-        $this->zoo("<icon>pushpin</icon> There are <zoo swap> {$this->collection->count()} </zoo> records in the <zoo underline>{$this->collectionName}</zoo> collection");
+        $this->zoo("<icon>pushpin</icon> There are <zoo swap> {$this->collection->count()} </zoo> matching records in the <zoo underline>{$this->collectionName}</zoo> collection");
     }
 
     /**

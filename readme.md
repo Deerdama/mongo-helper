@@ -26,13 +26,15 @@ Should work on any laravel above `5.0`, I can personally confirm `5.8`, `6.x` an
 | --- | --- | --- |
 | connection | string | Use a specific connection name instead of the default |
 | list |  | Output all existing collections |
-| count | | Output the total of records found in the specified collection |
+| count | | Output the total of matching records found in the specified collection |
 | count_all | | Shows a table with all existing collections and their totals |
 | limit | int | When using some data retrieval method, limit the amount of results returned |
 | delete | | Delete the entire content or the matching results from the collection |
 | drop | | Completely drop the collection |
 | select | array | Retrieve only specific columns |
 | where [**](#Using-WHERE-conditions) | string | Where parameters |
+| sort | string | Field to use for sorting |
+| desc | | Make the sorting descending (requires --sort option) |
 | download [**](#Download-Collections) | | Export the results into a file |
 | csv [**](#Download-Collections) | | Adding the option will export the data as csv (default is json) |
 | download_path [**](#Download-Collections) | string | Download the file into a specific directory (will ignore the default config `directory`)  |
@@ -82,6 +84,8 @@ Couple of simple examples
     <p>
       <img src="https://images2.imgbox.com/0e/44/e1mVJKx2_o.png" width="400px">
     </p>
+    
+* results can be sorted based on a specific field eg. `--sort=name`. To make the sorting descending just pass the option `--desc` 
 
 ---------------------
 <br>
