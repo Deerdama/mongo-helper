@@ -175,7 +175,8 @@ class MongoHelper extends Command
         }
 
         if ($this->option('dump')) {
-            return $this->collection->get()->dump();
+            $this->collection->get()->dump();
+            return;
         }
 
         $this->zoo("And what exactly am I supposed to do with the <zoo swap>{$this->collectionName}</zoo> collection? Try again with some option please", [
