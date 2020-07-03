@@ -21,6 +21,9 @@ class MongoHelper extends Command
     protected $connection;
 
     /** @var array */
+    protected $allCollections;
+
+    /** @var array */
     protected $errorParam = [
         'color' => 'white',
         'icons' => 'no_entry',
@@ -39,6 +42,9 @@ class MongoHelper extends Command
                             {--limit= : limit the amount of records to retrieve}
                             {--dump : dump the results}
                             {--select=* : get only specific fields}
+                            {--sort= : order results based on a specific field}
+                            {--order= : order results based on a specific field}
+                            {--desc : make the --sort option descending}
                             {--delete : delete all records in the collection}
                             {--drop : completely drop the collection}
                             {--download : download the collection into the storage}
@@ -129,26 +135,37 @@ class MongoHelper extends Command
             'icons' => 'crystal_ball'
         ]);
 
-        $name = $this->anticipate("Collection Name:", array_column($collections, 'collection'));
+        return $this->anticipate("Collection Name:", array_column($collections, 'collection'));
+    }
 
-        if (!$name || !in_array($name, array_column($collections, 'collection'))) {
-            $this->zooError(PHP_EOL . " <icon>no_entry</icon> Nope.. collection <zoo swap> {$name} </zoo> doesn't exist, try again.", [
-                'icons' => false
-            ]);
+    /**
+     * check if the requested collection exists
+     */
+    private function collectionExists()
+    {
+        $collections = $this->getAllCollections();
 
-            $this->zooWarning(PHP_EOL . " <icon>electric_light_bulb</icon> Do you want me to show you all the collections I found?", [
+        if (!in_array($this->collectionName, array_column($collections, 'collection'))) {
+            $this->zooWarning(" <icon>no_entry</icon> Nope.. sorry but the collection <zoo swap> {$this->collectionName} </zoo> doesn't exist, try again..", [
                 'icons' => false,
-                'bold' => false
             ]);
 
-            if ($this->confirm("")) {
-                return $this->listCollections();
-            } else {
-                return null;
+            if ($this->choice('Do you want me to show you all the collections I found?', ['no', 'yes'], 1) === 'yes') {
+                $this->table(['Collections'], $collections);
+                $this->br();
             }
-        }
 
-        return $name;
+            $this->br();
+            $this->collectionName = $this->anticipate("Collection Name?", array_column($collections, 'collection'));
+            $this->br();
+
+            if (!$this->collectionName) {
+                $this->zooError("Come back when you make up your mind!", ['icons' => 'angry_face']);
+                return false;
+            }
+
+            return $this->collectionExists();
+        }
     }
 
     /**
@@ -156,32 +173,31 @@ class MongoHelper extends Command
      */
     private function specificCollection()
     {
-        $this->collection = $this->getCollection();
-
-        if ($this->option('download') || $this->option('download_path')) {
-            return $this->downloadCollection();
+        if ($this->collectionExists() === false) {
+            return;
         }
 
         if ($this->option('drop')) {
             return $this->dropCollection();
         }
 
-        if ($this->option('delete')) {
-            return $this->delete();
-        }
+        $this->collection = $this->getCollection();
 
         if ($this->option('count')) {
-            return $this->collectionCount();
-        }
-
-        if ($this->option('dump')) {
+            $this->collectionCount();
+        } else if ($this->option('download') || $this->option('download_path')) {
+            $this->downloadCollection();
+        } else if ($this->option('delete')) {
+            $this->delete();
+        } else if ($this->option('dump')) {
             $this->collection->get()->dump();
-            return;
+        } else {
+            $this->zoo("And what exactly am I supposed to do with the <zoo swap>{$this->collectionName}</zoo> collection? Try again with some option..", [
+                'color' => 'orange',
+                'icons' => 'astonished_face'
+            ]);
+            $this->br();
+            $this->zooWarning("   Run <zoo italic>php artisan db:mongo-helper --help</zoo> to see all available options", ['icons' => false, 'bold' => false]);
         }
-
-        $this->zoo("And what exactly am I supposed to do with the <zoo swap>{$this->collectionName}</zoo> collection? Try again with some option please", [
-            'color' => 'orange',
-            'icons' => 'astonished_face'
-        ]);
     }
 }
