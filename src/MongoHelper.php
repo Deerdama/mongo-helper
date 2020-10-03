@@ -50,7 +50,8 @@ class MongoHelper extends Command
                             {--download : download the collection into the storage}
                             {--csv : download as csv}
                             {--download_path= : download the collection into a specific directory}
-                            {--import= : path to the file to upload into the specified collection}';
+                            {--import= : path to the file to upload into the specified collection}
+                            {--update=* : update specific records}"';
 
     protected $description = 'Methods to debug and handle mongo collections';
 
@@ -191,6 +192,8 @@ class MongoHelper extends Command
             $this->delete();
         } else if ($this->option('dump')) {
             $this->collection->get()->dump();
+        } else if ($this->option('update')) {
+            $this->update();
         } else {
             $this->zoo("And what exactly am I supposed to do with the <zoo swap>{$this->collectionName}</zoo> collection? Try again with some option..", [
                 'color' => 'orange',
