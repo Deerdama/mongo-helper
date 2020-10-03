@@ -5,7 +5,7 @@ Artisan command to quickly check, delete, export mongo collections, and to impor
 
 Install package: **`composer require deerdama/laravel-mongo-helper`**.
 
-Should work on any laravel above `5.0`, I can personally confirm `5.8`, `6.x` and `7.x`. Feel free to let me know if you find out issues on other versions, and I'll update the info..
+Should work on any laravel above `5.0`, I can personally confirm `5.8`, `6.x`, `7.x`, `8.x`. Feel free to let me know if you find out issues on other versions, and I'll update the info..
 
 <br>
 
@@ -15,6 +15,7 @@ Should work on any laravel above `5.0`, I can personally confirm `5.8`, `6.x` an
 * [Using *where* Conditions](#Using-WHERE-conditions)
 * [Downloads](#Download-Collections)
 * [Imports](#Import-Data)
+* [Update Data](#Update-Data)
 
 <br>
 
@@ -25,21 +26,22 @@ Should work on any laravel above `5.0`, I can personally confirm `5.8`, `6.x` an
 | Option | Value | Description |
 | --- | --- | --- |
 | connection | string | Use a specific connection name instead of the default |
-| list |  | Output all existing collections |
 | count | | Output the total of matching records found in the specified collection |
 | count_all | | Shows a table with all existing collections and their totals |
-| limit | int | When using some data retrieval method, limit the amount of results returned |
+| csv [**](#Download-Collections) | | Adding the option will export the data as csv (default is json) |
 | delete | | Delete the entire content or the matching results from the collection |
-| drop | | Completely drop the collection |
-| select | array | Retrieve only specific columns |
-| where [**](#Using-WHERE-conditions) | string | Where parameters |
-| sort | string | Field to use for sorting |
 | desc | | Make the sorting descending (requires --sort option) |
 | download [**](#Download-Collections) | | Export the results into a file |
-| csv [**](#Download-Collections) | | Adding the option will export the data as csv (default is json) |
 | download_path [**](#Download-Collections) | string | Download the file into a specific directory (will ignore the default config `directory`)  |
-| import [**](#Import-Data) | string | Import into a collection data exported as json or csv|
+| drop | | Completely drop the collection |
 | dump | | Simply `dump()` the results as they are |
+| import [**](#Import-Data) | string | Import into a collection data exported as json or csv|
+| limit | int | When using some data retrieval method, limit the amount of results returned |
+| list |  | Output all existing collections |
+| select | array | Retrieve only specific columns |
+| sort | string | Field to use for sorting |
+| update [**](#Update-Data) | string | Field to use for sorting |
+| where [**](#Using-WHERE-conditions) | string | Where parameters |
 
 ----------------
 <br>
@@ -147,3 +149,27 @@ But passing **`--where="age, >=, 33, cast=int"`** will make sure that the value 
     `php artisan db:mongo-helper test_collection --import=test_collection_2020_01_01_03_48_51.json`
 
 * If it doesn't find the file in the full path specified then it will try to find it in the [default directory](#Config)
+
+-------------------
+<br>
+
+## Update Data
+
+* Existing records can be updated through the `--update` option (multiple allowed).
+
+* Specific records can be targeted through `--where` conditions. You'll know the amount of records affected when prompted for confirmation. 
+
+* The update option needs to contain the field name to update and the value (comma separated) **`--update="field_name,new_value"`**
+
+* **Data Type** can be specified as third optional `cast` argument, same way as with [where](#Using-WHERE-conditions) conditions
+
+Eg. update `pet` and `year` for specific records in `users` collection:
+
+```shell script
+  php artisan db:mongo-helper users --update="year,1968,cast=int" --update="pet,chicken" --where="name,like,Kiryu%"
+```
+<p>
+  <img src="https://images2.imgbox.com/f9/14/ykTEAORM_o.png" width="380px">
+</p>
+
+
