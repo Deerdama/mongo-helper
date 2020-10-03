@@ -45,13 +45,7 @@ trait CollectionTrait
         foreach ($this->option('where') as $where) {
             preg_match('/^.*(?=,)/U', $where, $field);
             preg_match('/(?<=,).*(?=,|$)/U', $where, $operator);
-            preg_match('/\,cast=.*$|\, cast=.*$/U', $where, $cast);
-
-            if ($cast) {
-                $where = str_replace($cast[0], '', $where);
-                preg_match('/(?<=cast=).*(?=\s|$)/U', $cast[0], $type);
-                $cast = $type[0];
-            }
+            $cast = $this->findCast($where);
 
             preg_match('/^.*\,.*\,(.*)$/U', $where, $value);
 
@@ -88,6 +82,23 @@ trait CollectionTrait
                 $q->where($field, $operator, $value);
             }
         }
+    }
+
+    /**
+     * @param string $param
+     * @return string | bool
+     */
+    private function findCast(&$param)
+    {
+        preg_match('/\,cast=.*$|\, cast=.*$/U', $param, $cast);
+
+        if ($cast) {
+            $param = str_replace($cast[0], '', $param);
+            preg_match('/(?<=cast=).*(?=\s|$)/U', $cast[0], $type);
+            $cast = $type[0];
+        }
+
+        return $cast ?: false;
     }
 
     /**
@@ -217,5 +228,68 @@ trait CollectionTrait
                 'icons' => 'thumbs_up_sign'
             ]);
         }
+    }
+
+    /**
+     * update collection records
+     */
+    private function update()
+    {
+        $count = $this->collection->count();
+
+        if (!$count) {
+            return $this->zooInfo("<icon>squirrel</icon> Nothing to update.. there aren't any matching results in <zoo swap>{$this->collectionName}</zoo>", [
+                'icons' => false
+            ]);
+        }
+
+        $this->zooWarning("I found <zoo swap> {$count} </zoo> matching records in <zoo underline>{$this->collectionName}</zoo>, do you really want to update them all?", [
+            'icons' => 'paw_prints'
+        ]);
+
+        if (!$this->confirm("")) {
+            return;
+        }
+
+        $update = [];
+
+        foreach ($this->option('update') as $item) {
+            $cast = $this->findCast($item);
+            preg_match('/^.*(?=,)/U', $item, $field);
+            preg_match('/(?<=,).*(?=,cast=|$)/U', $item, $value);
+
+            if (!$field || !$value || $field[0] == "" || $value[0] == "") {
+                $this->zoo("Whoops, something is wrong with this parameter <zoo italic>--update=\"{$item}\"</zoo>", [
+                    'color' => 'pink',
+                    'icons' => 'no_entry',
+                    'bold' => false
+                ]);
+
+                $this->br();
+                $this->zooInfo("Make sure you are passing both the field name and the value", [
+                    'icons' => false,
+                    'bold' => false
+                ]);
+
+                $this->zooInfo("Correct format example: <zoo italic>--update=\"field_name,your value\"</zoo>", [
+                    'icons' => false,
+                    'bold' => false
+                ]);
+
+                return;
+            }
+
+            if ($cast) {
+                $value = $this->castValue($value, $cast);
+            }
+
+            $update[$field[0]] = $value[0];
+        }
+
+        $this->collection->update($update);
+
+        $this->zoo("All set! {$count} records in <zoo underline>{$this->collectionName}</zoo> updated", [
+            'icons' => 'thumbs_up_sign'
+        ]);
     }
 }
