@@ -107,7 +107,7 @@ trait CollectionTrait
      * @param string|array $value
      * @param string $type
      * @param bool $arr
-     * @return array|bool|int|object|string
+     * @return mixed
      */
     private function castValue($value, $type, $arr = false)
     {
@@ -123,6 +123,10 @@ trait CollectionTrait
             $new = (object)$value;
         } else if ($type === 'array' || $type === 'arr') {
             $new = (array)$value;
+        } else if ($type === 'float' || $type === 'double' || $type === 'real') {
+            $new = (float)$value;
+        } else if ($type === 'null' || $type === 'unset') {
+            return null;
         }
 
         return $new ?? $value;
