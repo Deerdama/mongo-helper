@@ -125,6 +125,8 @@ trait CollectionTrait
             $new = (array)$value;
         } else if ($type === 'float' || $type === 'double' || $type === 'real') {
             $new = (float)$value;
+        } else if (in_array($type, ['date', 'time', 'datetime', 'date_time', 'carbon', 'timestamp'])) {
+            $new = new \DateTime($value);
         } else if ($type === 'null' || $type === 'unset') {
             return null;
         }
