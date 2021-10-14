@@ -66,7 +66,7 @@ trait CollectionTrait
                 $cast = $this->checkAutoCasts($value);
             }
 
-            if ($cast) {
+            if ($cast || is_array($value)) {
                 $value = $this->castValue($value, $cast);
             }
 
@@ -142,7 +142,8 @@ trait CollectionTrait
     {
         if (is_array($value) && $arr === false) {
             foreach ($value as $item) {
-                $new[] = $this->castValue($item, $type, true);
+                $cast = $type ?: $this->checkAutoCasts($item);
+                $new[] = $this->castValue($item, $cast, true);
             }
         } else if ($type === 'string' || $type === 'str') {
             $new = (string)$value;
@@ -294,8 +295,9 @@ trait CollectionTrait
             $cast = $this->findCast($item);
             preg_match('/^.*(?=,)/U', $item, $field);
             preg_match('/(?<=,).*(?=,cast=|$)/U', $item, $value);
+            $value = $value[0] ?? false;
 
-            if (!$field || !$value || $field[0] == "" || $value[0] == "") {
+            if (!$field || !$value || $field[0] == "") {
                 $this->zoo("Whoops, something is wrong with this parameter <zoo italic>--update=\"{$item}\"</zoo>", [
                     'color' => 'pink',
                     'icons' => 'no_entry',
@@ -316,11 +318,15 @@ trait CollectionTrait
                 return;
             }
 
+            if (!$cast) {
+                $cast = $this->checkAutoCasts($value);
+            }
+
             if ($cast) {
                 $value = $this->castValue($value, $cast);
             }
 
-            $update[$field[0]] = $value[0];
+            $update[$field[0]] = $value;
         }
 
         $this->collection->update($update);

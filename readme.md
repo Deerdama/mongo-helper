@@ -126,7 +126,7 @@ Filtering by datetime can be specified in the `cast` as well, eg. `--where="crea
 
     Passing the value as array (inside `[]`) and also adding a specific `cast=??`, will apply the specified type to each item separately, eg: `--where="age, NOT IN, [15,20,100], cast=int"` (each *age* inside the array will be an integer)
 
-  * Some data types can be detected automatically if enabled in the [configuration](#Config). 
+  * Some data types can be detected automatically through autocasts if enabled in the [configuration](#Config). Applies to array content as well. 
 
 
 --------------
@@ -176,7 +176,7 @@ Filtering by datetime can be specified in the `cast` as well, eg. `--where="crea
 
 * The update option needs to contain the field name to update and the value (comma separated) **`--update="field_name,new_value"`**
 
-* **Data Type** can be specified as third optional `cast` argument, same way as with [where](#Using-WHERE-conditions) conditions
+* **Data Type** can be specified as third optional `cast` argument, same way as with [where](#Using-WHERE-conditions) conditions. Autocasts apply to the `--update` as well 
 
 Eg. update `pet` and `year` for specific records in `users` collection:
 
