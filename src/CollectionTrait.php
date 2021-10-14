@@ -62,7 +62,11 @@ trait CollectionTrait
                 $value = explode(',', trim($value, '[]'));
             }
 
-            if ($cast) {
+            if (!$cast) {
+                $cast = $this->checkAutoCasts($value);
+            }
+
+            if ($cast || is_array($value)) {
                 $value = $this->castValue($value, $cast);
             }
 
@@ -102,6 +106,31 @@ trait CollectionTrait
     }
 
     /**
+     * if no specific cast is passed then check if the value doesn't meet some autocast requirements
+     *
+     * @param string $value
+     * @return string|bool
+     */
+    private function checkAutoCasts($value)
+    {
+        if (is_numeric($value) && (config('mongo_helper.autocast_int') || config('mongo_helper.autocast_float'))) {
+            /**
+             * check whether the value is a float
+             * ctype_digit() would exclude negative values
+             */
+            $int = (int)$value;
+
+            if ($value === (string)$int && config('mongo_helper.autocast_int') === true) {
+                return 'int';
+            } else if ($value !== (string)$int && config('mongo_helper.autocast_float') === true) {
+                return 'float';
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * cast the value for the where condition as a specific type
      *
      * @param string|array $value
@@ -113,8 +142,11 @@ trait CollectionTrait
     {
         if (is_array($value) && $arr === false) {
             foreach ($value as $item) {
-                $new[] = $this->castValue($item, $type, true);
+                $cast = $type ?: $this->checkAutoCasts($item);
+                $new[] = $this->castValue($item, $cast, true);
             }
+        } else if ($type === 'string' || $type === 'str') {
+            $new = (string)$value;
         } else if ($type === 'int' || $type === 'integer') {
             $new = (int)$value;
         } else if ($type === 'bool' || $type === 'boolean') {
@@ -263,8 +295,9 @@ trait CollectionTrait
             $cast = $this->findCast($item);
             preg_match('/^.*(?=,)/U', $item, $field);
             preg_match('/(?<=,).*(?=,cast=|$)/U', $item, $value);
+            $value = $value[0] ?? false;
 
-            if (!$field || !$value || $field[0] == "" || $value[0] == "") {
+            if (!$field || !$value || $field[0] == "") {
                 $this->zoo("Whoops, something is wrong with this parameter <zoo italic>--update=\"{$item}\"</zoo>", [
                     'color' => 'pink',
                     'icons' => 'no_entry',
@@ -285,11 +318,15 @@ trait CollectionTrait
                 return;
             }
 
+            if (!$cast) {
+                $cast = $this->checkAutoCasts($value);
+            }
+
             if ($cast) {
                 $value = $this->castValue($value, $cast);
             }
 
-            $update[$field[0]] = $value[0];
+            $update[$field[0]] = $value;
         }
 
         $this->collection->update($update);
