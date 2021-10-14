@@ -57,7 +57,7 @@ trait CollectionTrait
             $operator = strtoupper(trim($operator[0], ' '));
             $value = trim($value[1] ?? '', ' ');
 
-            if (strpos($value, '[') === 0) {
+            if (preg_match('/^\[.*\]$/', $value)) {
                 $value = str_replace([', ', ' ,'], ',', $value);
                 $value = explode(',', trim($value, '[]'));
             }
@@ -318,11 +318,16 @@ trait CollectionTrait
                 return;
             }
 
+            if (preg_match('/^\[.*\]$/', $value)) {
+                $value = str_replace([', ', ' ,'], ',', $value);
+                $value = explode(',', trim($value, '[]'));
+            }
+
             if (!$cast) {
                 $cast = $this->checkAutoCasts($value);
             }
 
-            if ($cast) {
+            if ($cast || is_array($value)) {
                 $value = $this->castValue($value, $cast);
             }
 
