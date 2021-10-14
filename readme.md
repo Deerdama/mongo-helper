@@ -65,6 +65,19 @@ Plus any specific connection name can be passed every time you are using the com
 
 * **`directory`**: By default the downloads will go be in their own directory `mongodb/`
 
+
+* **`autocast_int`**: (default = `true`). If a numeric value is passed then it will be automatically casted as integer.
+Applies to both values passed for a `--where` and `--update`.
+
+  <sup>!!! does not apply to `floats`. Eg. value `5.5` WON'T be affected by `autocast_int`, use `autocast_float` for that.</sup>
+
+* **`autocast_float`**: (default = `true`). If set to true then a passed numeric (float like) value will be automatically considered as `float`.
+
+  <sup>"Float like" values eg: `5.5`, `15.00`, `-1.1520`, etc..</sup>
+
+
+!!Passing a specific `cast` in the parameter will always overwrite the autocasts.
+
 -----------------
 <br>
 
@@ -113,6 +126,7 @@ Filtering by datetime can be specified in the `cast` as well, eg. `--where="crea
 
     Passing the value as array (inside `[]`) and also adding a specific `cast=??`, will apply the specified type to each item separately, eg: `--where="age, NOT IN, [15,20,100], cast=int"` (each *age* inside the array will be an integer)
 
+  * Some data types can be detected automatically if enabled in the [configuration](#Config). 
 
 
 --------------
