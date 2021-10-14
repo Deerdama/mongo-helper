@@ -62,6 +62,10 @@ trait CollectionTrait
                 $value = explode(',', trim($value, '[]'));
             }
 
+            if (!$cast) {
+                $cast = $this->checkAutoCasts($value);
+            }
+
             if ($cast) {
                 $value = $this->castValue($value, $cast);
             }
@@ -102,6 +106,31 @@ trait CollectionTrait
     }
 
     /**
+     * if no specific cast is passed then check if the value doesn't meet some autocast requirements
+     *
+     * @param string $value
+     * @return string|bool
+     */
+    private function checkAutoCasts($value)
+    {
+        if (is_numeric($value) && (config('mongo_helper.autocast_int') || config('mongo_helper.autocast_float'))) {
+            /**
+             * check whether the value is a float
+             * ctype_digit() would exclude negative values
+             */
+            $int = (int)$value;
+
+            if ($value === (string)$int && config('mongo_helper.autocast_int') === true) {
+                return 'int';
+            } else if ($value !== (string)$int && config('mongo_helper.autocast_float') === true) {
+                return 'float';
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * cast the value for the where condition as a specific type
      *
      * @param string|array $value
@@ -115,6 +144,8 @@ trait CollectionTrait
             foreach ($value as $item) {
                 $new[] = $this->castValue($item, $type, true);
             }
+        } else if ($type === 'string' || $type === 'str') {
+            $new = (string)$value;
         } else if ($type === 'int' || $type === 'integer') {
             $new = (int)$value;
         } else if ($type === 'bool' || $type === 'boolean') {
